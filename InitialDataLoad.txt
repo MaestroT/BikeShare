@@ -1,0 +1,100 @@
+CREATE TABLE LOCATION (
+locid integer PRIMARY KEY,
+city text,
+location text);
+
+INSERT INTO LOCATION VALUES (1, 'GLASGOW', 'Cathedral');
+INSERT INTO LOCATION VALUES (2, 'GLASGOW', 'Art Gallery');
+INSERT INTO LOCATION VALUES (3, 'GLASGOW', 'University Campus');
+INSERT INTO LOCATION VALUES (4, 'GLASGOW', 'Railway St');
+INSERT INTO LOCATION VALUES (5, 'GLASGOW', 'Park');
+
+CREATE TABLE bike (
+bikeid integer PRIMARY KEY,
+locid integer,
+rented text,
+bikestat text);
+
+INSERT INTO bike VALUES (1,  1, 'N', 'Y');
+INSERT INTO bike VALUES (2,  1, 'N', 'Y');
+INSERT INTO bike VALUES (3,  1, 'N', 'Y');
+INSERT INTO bike VALUES (4,  1, 'N', 'Y');
+INSERT INTO bike VALUES (5,  1, 'N', 'Y');
+INSERT INTO bike VALUES (6,  1, 'N', 'Y');
+INSERT INTO bike VALUES (7,  1, 'N', 'Y');
+INSERT INTO bike VALUES (8,  1, 'N', 'Y');
+INSERT INTO bike VALUES (9,  1, 'N', 'Y');
+INSERT INTO bike VALUES (10, 1, 'N', 'Y');
+INSERT INTO bike VALUES (11, 2, 'N', 'Y');
+INSERT INTO bike VALUES (12, 2, 'N', 'Y');
+INSERT INTO bike VALUES (13, 2, 'N', 'Y');
+INSERT INTO bike VALUES (14, 2, 'N', 'Y');
+INSERT INTO bike VALUES (15, 2, 'N', 'Y');
+INSERT INTO bike VALUES (16, 2, 'N', 'Y');
+INSERT INTO bike VALUES (17, 2, 'N', 'Y');
+INSERT INTO bike VALUES (18, 2, 'N', 'Y');
+INSERT INTO bike VALUES (19, 2, 'N', 'Y');
+INSERT INTO bike VALUES (20, 2, 'N', 'Y');
+INSERT INTO bike VALUES (21, 3, 'N', 'Y');
+INSERT INTO bike VALUES (22, 3, 'N', 'Y');
+INSERT INTO bike VALUES (23, 3, 'N', 'Y');
+INSERT INTO bike VALUES (24, 3, 'N', 'Y');
+INSERT INTO bike VALUES (25, 3, 'N', 'Y');
+INSERT INTO bike VALUES (26, 3, 'N', 'Y');
+INSERT INTO bike VALUES (27, 3, 'N', 'Y');
+INSERT INTO bike VALUES (28, 3, 'N', 'Y');
+INSERT INTO bike VALUES (29, 3, 'N', 'Y');
+INSERT INTO bike VALUES (30, 3, 'N', 'Y');
+INSERT INTO bike VALUES (31, 4, 'N', 'Y');
+INSERT INTO bike VALUES (32, 4, 'N', 'Y');
+INSERT INTO bike VALUES (33, 4, 'N', 'Y');
+INSERT INTO bike VALUES (34, 4, 'N', 'Y');
+INSERT INTO bike VALUES (35, 4, 'N', 'Y');
+INSERT INTO bike VALUES (36, 4, 'N', 'Y');
+INSERT INTO bike VALUES (37, 4, 'N', 'Y');
+INSERT INTO bike VALUES (38, 4, 'N', 'Y');
+INSERT INTO bike VALUES (39, 4, 'N', 'Y');
+INSERT INTO bike VALUES (40, 4, 'N', 'Y');
+INSERT INTO bike VALUES (41, 5, 'N', 'Y');
+INSERT INTO bike VALUES (42, 5, 'N', 'Y');
+INSERT INTO bike VALUES (43, 5, 'N', 'Y');
+INSERT INTO bike VALUES (44, 5, 'N', 'Y');
+INSERT INTO bike VALUES (45, 5, 'N', 'Y');
+INSERT INTO bike VALUES (46, 5, 'N', 'Y');
+INSERT INTO bike VALUES (47, 5, 'N', 'Y');
+INSERT INTO bike VALUES (48, 5, 'N', 'Y');
+INSERT INTO bike VALUES (49, 5, 'N', 'Y');
+INSERT INTO bike VALUES (50, 5, 'N', 'Y');
+
+CREATE TABLE ActivityLog (
+TxnID integer PRIMARY KEY,	
+BikeID	integer,
+UserID	integer,
+StartDateTime text,
+EndDateTime   text,
+PaidBy	      text,
+startLoc  integer,
+endLoc    integer,
+Charges   real)
+
+CREATE TABLE USER (
+userid integer PRIMARY KEY,
+username text,
+role text,
+password_txt text,
+balance real);
+
+INSERT INTO USER VALUES (1, 'John',   'Manager',  '',  '0.00');
+INSERT INTO USER VALUES (2, 'Jane',   'Operator', '',  '0.00');
+INSERT INTO USER VALUES (3, 'Jack',   'Operator', '',  '0.00');
+INSERT INTO USER VALUES (4, 'Bill',   'Operator', '',  '0.00');
+INSERT INTO USER VALUES (5, 'Henry',  'Operator', '',  '0.00');
+INSERT INTO USER VALUES (6, 'Smith',  'User',     '',  '10.00');
+INSERT INTO USER VALUES (7, 'Jill',   'User',     '',  '10.00');
+INSERT INTO USER VALUES (8, 'Kevin',  'User',     '',  '10.00');
+INSERT INTO USER VALUES (9, 'Kristin','User',     '',  '10.00');
+INSERT INTO USER VALUES (10, 'William''User',     '',  '10.00');
+INSERT INTO USER VALUES (11, 'Cindy', 'User',     '',  '10.00');
+INSERT INTO USER VALUES (12, 'Dale',  'User',     '',  '10.00');
+INSERT INTO USER VALUES (13, 'Isabel','User',     '',  '10.00');
+INSERT INTO USER VALUES (14, 'Nikki', 'User',     '',  '10.00');
