@@ -1,0 +1,23 @@
+﻿bike id,start,end,time,cost,user id,date
+1,uog,city,1,2,1,08-10-2021
+2,uog,city,3,6,2,08-10-2021
+3,uog,city,5,10,3,08-10-2021
+4,uog,city,6,12,9,08-10-2021
+5,uog,city,2,4,10,08-10-2021
+6,uog,uog,2,4,11,08-10-2021
+7,uog,uog,5,10,1,08-10-2021
+8,uog,city,5,10,12,07-10-2021
+9,uog,city,2,4,2,07-10-2021
+10,uog,city,1,2,3,07-10-2021
+11,uog,city,1,2,4,07-10-2021
+12,uog,city,3,6,2,06-10-2021
+13,city,uog,4,8,3,06-10-2021
+14,city,uog,3,6,3,06-10-2021
+15,city,uog,6,12,5,06-10-2021
+16,city,kelvingrove,8,16,3,06-10-2021
+17,city,kelvingrove,9,18,3,07-10-2021
+18,city,kelvingrove,3,6,4,06-10-2021
+19,kelvingrove,city,5,10,5,07-10-2021
+20,kelvingrove,city,3,6,6,08-10-2021
+21,kelvingrove,city,1,2,7,07-10-2021
+22,kelvingrove,city,1,2,8,06-10-2021

@@ -6,11 +6,40 @@ This file will initialize the SQL's required for basic operations
 @author: Mani
 """
 
-import sqlite3
-with sqlite3.connect("D:/sqlite/bikeshare.db") as db:
-    cursor = db.cursor()
 
 #def initSQL(): 
+    
+"""
+User Logon SQL
+"""
+user_logon = """SELECT userid, role 
+                FROM user 
+                WHERE 
+                username= ? AND password_txt= ? 
+                LIMIT 1 """
+
+"""
+Get all user data
+"""
+all_user = "SELECT username, role, password_txt, balance, age FROM user"
+
+
+"""
+Insert an user to table
+"""
+add_user = """INSERT INTO user(username, password_txt, age,role, balance) 
+            VALUES (?,?,?,?,0.0)"""
+
+"""
+Display user balance
+"""
+disp_balance = " SELECT balance FROM user where userid = ? "
+
+"""
+List of all locations
+"""
+list_locations = """ SELECT locid, location FROM location """
+
 """
 Insert the activity log of the bike at time of renting
 EndDateTime, PaidBy, endLoc, Charges To be NULL
@@ -91,16 +120,24 @@ Report a bike as defective
 """  
 report_defective = """ UPDATE bike  
                        SET bikestat = 'N',
-                       rented = 'N'
+                       rented = 'N',
+                       issue_desc = ?
                        WHERE bikeid = ? """
 
 """
 Pay charges to user's account
 """
 pay_acct = """UPDATE user
-              SET balance  = ?
+              SET balance  = balance + ?
               WHERE userid = ?
            """
+
+"""
+Update user balance after return of bike
+"""
+update_balance = """UPDATE user
+              SET balance  = balance - ?
+              WHERE userid = ? """
 
 """
 Track location of all bikes
