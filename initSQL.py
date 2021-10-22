@@ -25,7 +25,7 @@ all_user = "SELECT username, role, password_txt, balance, age FROM user"
 
 
 """
-Insert an user to table
+Insert an user to table at Sign-up. The initial balance is Zero for the user
 """
 add_user = """INSERT INTO user(username, password_txt, age,role, balance) 
             VALUES (?,?,?,?,0.0)"""
@@ -53,7 +53,7 @@ ins_activity = """ INSERT INTO ActivityLog
                             startLoc,
                             endLoc  ,
                             Charges) 
-                           VALUES (?, ?, datetime('now'), ?, ?, ?, ?, ?)"""
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""
 
 #Mark bike as rented
 bike_rented = """ UPDATE bike SET rented = 'Y'
@@ -64,10 +64,11 @@ Update the activity log for the bike once returned
 identify by using bikeid, userid and which is not yet returned
 """      
 upd_activitylog = """ UPDATE ActivityLog  
-                       SET EndDateTime = datetime('now'),
+                       SET EndDateTime =?,
                            PaidBy	   =?,
                            endLoc      =?,
-                           Charges     =?
+                           Charges     =?,
+                           duration_mins =?
                        WHERE
                            bikeid =?  and 
                            userid =?  and
@@ -116,6 +117,14 @@ find_bike = """ SELECT bikeid
            """
 
 """
+Get the bike's current location
+"""
+getBikeLoc = """ SELECT locid 
+               FROM bike 
+               WHERE bikeid = ? 
+               LIMIT 1 """
+
+"""
 Report a bike as defective
 """  
 report_defective = """ UPDATE bike  
@@ -149,11 +158,19 @@ track_all_loc = """ select l.city, l.location, count(b.bikeid)
                         group by b.locid
                  """
 
+track_defective = """ select l.location, b.issue_desc, b.bikeid
+                     from BIKE b, LOCATION l
+                        where
+                        b.locid = l.locid
+                        and b.bikestat = 'N';
+                 """
+
 """
 Mark a bike as repaired
 """
 repaired = """ UPDATE bike
-               SET  bikestat = 'Y'
+               SET  bikestat = 'Y', 
+               issue_desc = ""
                WHERE
                bikeid = ? """
 
