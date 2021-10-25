@@ -158,25 +158,33 @@ track_all_loc = """ select l.city, l.location, count(b.bikeid)
                         group by b.locid
                  """
 
+"""
+List all defective bikes
+"""
 track_defective = """ select l.location, b.issue_desc, b.bikeid
                      from BIKE b, LOCATION l
                         where
                         b.locid = l.locid
-                        and b.bikestat = 'N';
-                 """
+                        and b.bikestat = 'N' """
 
 """
-Mark a bike as repaired
+Update a Bike status to repaired
 """
-repaired = """ UPDATE bike
-               SET  bikestat = 'Y', 
-               issue_desc = ""
-               WHERE
-               bikeid = ? """
+repair_bike = """ UPDATE bike
+                  SET bikestat = 'Y',
+                  issue_desc = NULL
+                  where bikeid = ? """
 
 """
-Move a bike to specific location
+Move bikes to specific location
 """
 move_bike = """ UPDATE bike 
                 SET locid = ?
                 WHERE bikeid = ? """
+
+"""
+Select a bike from given location
+"""
+select_one_bike = """ SELECT bikeid FROM bike
+                WHERE locid = ?
+                LIMIT 1 """
