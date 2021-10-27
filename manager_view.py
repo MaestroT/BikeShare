@@ -39,7 +39,9 @@ import sqlite3
 with sqlite3.connect("bikeshare.db") as db:
     cursor = db.cursor()
 from datetime import datetime
-from datetime import timedelta    
+from datetime import timedelta  
+import folium
+from  streamlit_folium import folium_static
 
 #c.execute('CREATE TABLE IF NOT EXISTS users(user_id TEXT, pwd TEXT, name TEXT,age integer ,mtype TEXT)')
 
@@ -101,6 +103,11 @@ def findBike(locid, userid):
         print("Success calling ins_activity")
         db.commit()
         return alloted_bike[0]
+
+# find avaiable bikes
+def findBikes(locid):
+    cursor.execute(qry.find_bikes, (locid,))
+    return cursor.fetchall()
 
 
 def returnBike(userid, endlocid):
@@ -347,6 +354,28 @@ if select_page == 'Sign in':
             
             task=st.selectbox("Task", ["Book","View balance","Return",
                                "TopUp Wallet","Report Defective Bike"])
+            
+            # show map
+            m = folium.Map(
+                    location=[55.86,-4.27],
+                    zoom_start=14
+                )
+            loc_list = get_locations()
+            loc_frame = pd.DataFrame(loc_list,
+                columns=["LocID", "Location","Lat","Lng","Bikecount"])
+            for i in range(len(loc_frame)):
+                print(loc_frame['Location'][i])
+                folium.Marker(
+                    [loc_frame["Lat"][i],loc_frame["Lng"][i]],
+                    popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
+                    ).add_to(m)
+            # click for lat and lng
+            m.add_child(folium.LatLngPopup())
+            # print(str(folium.LatLngPopup().to_dict()))
+            # print(str(folium.LatLngPopup().location))
+            folium_static(m)
+
+
             if task=="Book":
                 #User needs to pay if there is any pending charges and proceed
                 proceedBooking = 0
@@ -365,35 +394,16 @@ if select_page == 'Sign in':
                     proceedBooking += 1
 
                 if (proceedBooking > 0):
-                    loc_list = get_locations()
-                    loc_frame=pd.DataFrame(loc_list, columns=["LocID", "Location"])
                     loc_display=loc_frame[["Location"]]
                     loc_selected=st.selectbox("Available Locations",loc_display)
+                    locid = int(loc_frame[loc_frame["Location"]==loc_selected]["LocID"].to_list()[0])
+                    bike_available = len(list(findBikes(locid)))
+                    print(bike_available)
+                    st.write("There are "+str(bike_available)+" bike(s) available.")
+
                     if (st.button("Book a ride")):
-                        #function to boook a ride 
-                        #and other book id
-                        #List Booking locations
-                        #loc_list = get_locations()
-                        #loc_frame=pd.DataFrame(loc_list, columns=["LocID", "Location"])
-                        #loc_display=loc_frame[["Location"]]
-                        #loc_selected=st.selectbox("Available Locations",loc_display)
-                        #print("loc_selected", loc_selected)
                         
-                        #locid=loc_frame.query('Location == ').LocID.iloc[0]
-                        #print("locid :", locid)
-                        
-                        if loc_selected == "Merchant Square":
-                            locid = 1
-                        elif loc_selected == "University of Strathclyde":
-                            locid = 2
-                        elif loc_selected == "Partick Interchange":
-                            locid = 3
-                        elif loc_selected == "University of Glasgow":
-                            locid = 4
-                        elif loc_selected == "Waterloo Street":
-                            locid = 5
-                        elif loc_selected == "Glasgow Cathedral":
-                            locid = 6
+                        locid = int(loc_frame[loc_frame["Location"]==loc_selected]["LocID"].to_list()[0])
                         print("locid :", locid)
                         
                         alloted_bike = findBike(locid, userid)
@@ -405,37 +415,13 @@ if select_page == 'Sign in':
                             st.write("You already have a rented bike. Please return to rent again!")
                     
             if task=="Return":
-                loc_list = get_locations()
-                loc_frame=pd.DataFrame(loc_list, columns=["LocID", "Location"])
                 loc_display=loc_frame[["Location"]]
                 loc_selected=st.selectbox("Available Locations",loc_display)
                 print("loc_selected", loc_selected)
                         
                 if (st.button("Return a bike")):
-                    #function to boook a ride 
-                    #and other book id
-                    #List return locations here
-                    #loc_list = get_locations()
-                    #loc_frame=pd.DataFrame(loc_list, columns=["LocID", "Location"])
-                    #loc_display=loc_frame[["Location"]]
-                    #loc_selected=st.selectbox("Available Locations",loc_display)
-                    #print("loc_selected", loc_selected)
+                    locid = int(loc_frame[loc_frame["Location"]==loc_selected]["LocID"].to_list()[0])
                     
-                    #locid=loc_frame.query('Location == ').LocID.iloc[0]
-                    #print("locid :", locid)
-                    
-                    if loc_selected == "Merchant Square":
-                        locid = 1
-                    elif loc_selected == "University of Strathclyde":
-                        locid = 2
-                    elif loc_selected == "Partick Interchange":
-                        locid = 3
-                    elif loc_selected == "University of Glasgow":
-                        locid = 4
-                    elif loc_selected == "Waterloo Street":
-                        locid = 5
-                    elif loc_selected == "Glasgow Cathedral":
-                        locid = 6
                     print("locid :", locid)
                     
                     
@@ -500,6 +486,23 @@ if select_page == 'Sign in':
             st.success("Logged in as {}".format(username))
             
             task=st.selectbox("Task",["Controller", "Track Locations", "Repair", "Move"])
+            
+            # show map
+            m = folium.Map(
+                    location=[55.86,-4.27],
+                    zoom_start=14
+                )
+            loc_list = get_locations()
+            loc_frame = pd.DataFrame(loc_list,
+                columns=["LocID", "Location","Lat","Lng","Bikecount"])
+            for i in range(len(loc_frame)):
+                print(loc_frame['Location'][i])
+                folium.Marker(
+                    [loc_frame["Lat"][i],loc_frame["Lng"][i]],
+                    popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
+                    ).add_to(m)
+            folium_static(m)
+
             if task=="Controller":
                 user_result=view_all_users(username, pwd)
                 clean_db=pd.DataFrame(user_result,columns=["User name", "Role", "Password", "Balance", "Age"])
@@ -541,18 +544,20 @@ if select_page == 'Sign in':
                 #                                           ,'Partick Interchange','Glasgow Cathedral','Waterloo Street'))
                 a=all_bikes_disp[all_bikes_disp["Bike Count"]>0]["Location"].unique()
                 loc3 = st.selectbox('Choose the Source location to move bike from',a)
-                if loc3 == "Merchant Square":
-                    frlocid = 1
-                elif loc3 == "University of Strathclyde":
-                    frlocid = 2
-                elif loc3 == "Partick Interchange":
-                    frlocid = 3
-                elif loc3 == "University of Glasgow":
-                    frlocid = 4
-                elif loc3 == "Waterloo Street":
-                    frlocid = 5
-                elif loc3 == "Glasgow Cathedral":
-                    frlocid = 6
+                # if loc3 == "Merchant Square":
+                #     frlocid = 1
+                # elif loc3 == "University of Strathclyde":
+                #     frlocid = 2
+                # elif loc3 == "Partick Interchange":
+                #     frlocid = 3
+                # elif loc3 == "University of Glasgow":
+                #     frlocid = 4
+                # elif loc3 == "Waterloo Street":
+                #     frlocid = 5
+                # elif loc3 == "Glasgow Cathedral":
+                #     frlocid = 6
+
+                frlocid = int(loc_frame[loc_frame["Location"]==loc3]["LocID"].to_list()[0])
                 print("From locid :", frlocid)
                 #st.write(all_bikes_disp[all_bikes_disp["Location"]==loc3]["Bike Count"].unique())
                 #maxbk=all_bikes_disp[all_bikes_disp["Location"]==loc3]["Bike Count"]
@@ -560,31 +565,34 @@ if select_page == 'Sign in':
                 bno2=st.number_input(label="Enter the number of bike to move", step=1) #check max value later
                 
                 loc_list = get_locations()
-                loc_frame=pd.DataFrame(loc_list, columns=["LocID", "Location"])
-                loc_display=loc_frame[["Location"]]
+                loc_frame=pd.DataFrame(loc_list, columns=["LocID", "Location","Lat","Lng","Bikecount"])
+                loc_display=loc_frame[loc_frame["LocID"]!=frlocid]["Location"]
 
                 loc4 = st.selectbox('Choose the destination location',loc_display)
-                if loc4 == "Merchant Square":
-                    dstlocid = 1
-                elif loc4 == "University of Strathclyde":
-                    dstlocid = 2
-                elif loc4 == "Partick Interchange":
-                    dstlocid = 3
-                elif loc4 == "University of Glasgow":
-                    dstlocid = 4
-                elif loc4 == "Waterloo Street":
-                    dstlocid = 5
-                elif loc4 == "Glasgow Cathedral":
-                    dstlocid = 6
+                # if loc4 == "Merchant Square":
+                #     dstlocid = 1
+                # elif loc4 == "University of Strathclyde":
+                #     dstlocid = 2
+                # elif loc4 == "Partick Interchange":
+                #     dstlocid = 3
+                # elif loc4 == "University of Glasgow":
+                #     dstlocid = 4
+                # elif loc4 == "Waterloo Street":
+                #     dstlocid = 5
+                # elif loc4 == "Glasgow Cathedral":
+                #     dstlocid = 6
+
+                dstlocid = int(loc_frame[loc_frame["Location"]==loc4]["LocID"].to_list()[0])
                 print("Dest locid :", dstlocid)
+                number = int(loc_frame[loc_frame["LocID"]==frlocid]["Bikecount"])
                 #Call repair bike in bulk or using one by one bike id
                 if (st.button("Move the bike")):
-                    if (bno2 > 0):
-                        if (frlocid != dstlocid):
-                            move(frlocid, dstlocid, bno2)
-                            st.write("Specified number of bikes are moved to the destination location")
-                        else:
-                            st.write("Same source and destinations selected")
+                    if (bno2 > 0) and (bno2 <= number):
+                        # if (frlocid != dstlocid):
+                        move(frlocid, dstlocid, bno2)
+                        st.write("Specified number of bikes are moved to the destination location")
+                        # else:
+                            # st.write("Same source and destinations selected")
                     else:
                         st.write("Please select a valid number")
                 

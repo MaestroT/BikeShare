@@ -38,7 +38,12 @@ disp_balance = " SELECT balance FROM user where userid = ? "
 """
 List of all locations
 """
-list_locations = """ SELECT locid, location FROM location """
+list_locations = """ select l.locid, l.location, l.latitude, l.longitude, count(b.bikeid)
+                     from BIKE b, LOCATION l
+                        where
+                        b.locid = l.locid
+                        group by b.locid
+ """
 
 """
 Insert the activity log of the bike at time of renting
@@ -114,6 +119,16 @@ find_bike = """ SELECT bikeid
                       bikestat = 'Y' and
                       locid = ?
                       LIMIT 1
+           """
+
+"""
+Search available bikes at a specific location
+"""         
+find_bikes = """ SELECT bikeid 
+                FROM bike  
+                WHERE rented = 'N' and 
+                      bikestat = 'Y' and
+                      locid = ?
            """
 
 """
