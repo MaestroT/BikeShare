@@ -340,7 +340,7 @@ if select_page == 'Sign in':
     #log1=st.radio("Would you like to sign in or sign up?",('Sign in','Sign up'),key=0)
     #if (log1=='Sign in'):
     #st.subheader("Enter User ID")
-    username=st.sidebar.text_input("USER ID")
+    username=st.sidebar.text_input("USERNAME")
     #st.subheader("Enter Password")
     pwd=st.sidebar.text_input("Password",type='password')
     if (st.sidebar.checkbox("Sign in/Sign out")):
@@ -629,7 +629,7 @@ if select_page == 'Sign in':
     
 if select_page == 'Sign up':
     st.subheader("Create a new account")
-    user_id=st.text_input("USER ID")
+    user_id=st.text_input("USERNAME")
     st.subheader("Enter Password")
     pwd=st.text_input("Password",type='password')
     #st.subheader("Confirm Password")
