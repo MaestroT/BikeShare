@@ -42,6 +42,9 @@ from datetime import datetime
 from datetime import timedelta  
 import folium
 from  streamlit_folium import folium_static
+###
+import pydeck as pdk
+import altair as alt
 
 #c.execute('CREATE TABLE IF NOT EXISTS users(user_id TEXT, pwd TEXT, name TEXT,age integer ,mtype TEXT)')
 
@@ -267,6 +270,41 @@ def get_locations():
     loc=cursor.fetchall()
     return loc
 
+###############################################
+@st.cache(persist=True)
+def get_activities():
+    cursor.execute(qry.list_activities)
+    act=cursor.fetchall()
+    return act
+# stime, lat, lng
+###############################################
+
+def show_map(data,lat,lon,zoom):
+    st.write(pdk.Deck(
+        map_style="mapbox://styles/mapbox/light-v9",
+        initial_view_state={
+            "latitude": 55.86,
+            "longitude": -4.27,
+            "zoom": zoom,
+            "pitch": 50,
+        },
+        layers=[
+            pdk.Layer(
+                "HexagonLayer",
+                data,
+                get_position=["lon", "lat"],
+                radius=10,
+                auto_highlight=True,
+                elevation_scale=50,
+                pickable=True,
+                elevation_range=[5, 30],
+                extruded=True,
+                coverage=1
+            ),
+        ]
+    ))
+
+###############################################
 def get_balance(userid):
     balance = ['']
     cursor.execute(qry.disp_balance, (userid,))
@@ -599,31 +637,87 @@ if select_page == 'Sign in':
         elif result[1] == "Manager":
             userid = result[0]
             st.success("Logged in as {}".format(username))
-            task=st.selectbox("Task",["Controller","Manager"])
-            if task=="Manager":
-                transac=pd.read_csv("transaction_data.csv")
-                df=transac.copy()
-                st.write(transac)
-                transac.groupby(["time"]).count()
-                fig = px.bar(df, x="date", y="time",color='user id',title= "Time rented per day")
-                fig.update_layout(showlegend=True)        
-                fig.update_layout(legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=1.2))
-                st.plotly_chart(fig, use_container_width=True)
+            task=st.selectbox("Task",["Visualizations", "View activities via map"])
+            if task=="Visualizations":
+                st.info("view the insights here")
+                #cursor.execute('''select * from ActivityLog''') 
+                cursor.execute('''select a.*,b.username,b.gender,b.age,b.balance from ActivityLog a left join USER b on a.UserID==b.userid''') 
+                txn1=cursor.fetchall()
+                df=pd.DataFrame(txn1,columns=["TxnID", "BikeID", "UserID","StartDateTime","EndDateTime","PaidBy",
+                                              "startLoc","endLoc","Charges","duration_mins","Name","Gender","Age","Balance"])
+                di={1:"Merchant Square",2:"University of Strathclyde",3:"Patrick Interchange",4:"University of Glasgow",
+                    5:"Waterloo Street",6:"Glasgow Cathedral"}
+                df["start_loc"]=df["startLoc"].map(di)
+                df["end_loc"]=df["endLoc"].map(di)
+                df['date']=pd.to_datetime(df['StartDateTime']).dt.date
+                df['age_bucket']=np.where(df['Age']<=19,"Children/Teen",np.where(df['Age']<=29,"Young Adult",np.where(df['Age']<60,"Adult","Senior Citizen")))
+                #df=pd.DataFrame(txn1)
+                #st.dataframe(df)
+                #st.write(min(df['date']))
+                dmin=min(df['date'])
+                dmax=max(df['date'])
+                date1=st.date_input(label="Enter starting date to view insights",min_value=dmin,max_value=dmax,value=dmin)
+                date2=st.date_input(label="Enter ending date to view insights",min_value=date1,max_value=dmax,value=dmax)      
+                df=df[(df['date']>=date1)&(df['date']<=date2)]
+                st.write("Transaction table")
+                st.dataframe(df)
+                dfagg=df.groupby(['date']).agg(txns=('TxnID','count'),revenue=('Charges','sum'),rent_time=('duration_mins','sum')).reset_index()
+                dfloc1=df.groupby(['start_loc']).agg(txns=('TxnID','count'),revenue=('Charges','sum'),rent_time=('duration_mins','sum')).reset_index()
+                dfloc2=df.groupby(['end_loc']).agg(txns=('TxnID','count'),revenue=('Charges','sum'),rent_time=('duration_mins','sum')).reset_index()
+                dfgen=df.groupby(['Gender']).agg(txns=('TxnID','count'),revenue=('Charges','sum'),rent_time=('duration_mins','sum')).reset_index()
+                dfage=df.groupby(['age_bucket']).agg(txns=('TxnID','count'),revenue=('Charges','sum'),rent_time=('duration_mins','sum')).reset_index()
+                fig1 = px.line(dfagg, x="date", y="txns",title= "Transactions per day",labels={
+                     "date": "Rented Date",
+                     "txns": "Number of transactions",
+                 }) #bar or line needs to be decided
+                st.plotly_chart(fig1, use_container_width=True)
+                fig2 = px.line(dfagg, x="date", y="revenue",title= "Revenue per day (in Pounds)",labels={
+                     "date": "Rented Date",
+                     "revenue": "Revenue Generated",
+                 }) #bar or line needs to be decided
+                st.plotly_chart(fig2, use_container_width=True)
+                fig3 = px.pie(dfloc1, names="start_loc", values="txns",title= "Transactions in each location",labels={
+                     "start_loc": "Location",
+                     "txns": "Transactions",
+                 })
+                st.plotly_chart(fig3, use_container_width=True)
+                fig4 = px.bar(dfgen, x="Gender", y="txns",title= "Transactions by gender",labels={
+                     "Gender": "Gender",
+                     "txns": "Transactions",
+                 })
+                st.plotly_chart(fig4, use_container_width=True)
+                fig5 = px.bar(dfage, x="age_bucket", y="txns",title= "Transactions by Age group",labels={
+                     "age_bucket": "Age Bucket",
+                     "txns": "Transactions",
+                 })
+                st.plotly_chart(fig5, use_container_width=True)
+                #df.to_excel("df.xlsx")
+                #st.dataframe(dftxn)
                 
-                fig = px.bar(df, x="date", y="cost",title= "Revenue per day")
-                #fig.update_layout(showlegend=True)        
-                #fig.update_layout(legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=1.2))
-                st.plotly_chart(fig, use_container_width=True)
+                #fig1 = px.line(df, x="StartDateTime", y="TxnID",title= "Transactions per day")
+                #st.plotly_chart(fig1, use_container_width=True)
+            
+            # if task=="Controller":
+            #     user_result=view_all_users(username, pwd)
+            #     clean_db=pd.DataFrame(user_result,columns=["User name","Role","Password","Balance","Age"])
+            #     clean_db=clean_db[["User name","Password","Balance","Age"]]
+            #     st.dataframe(clean_db)    
+            ################################
+            if task=="View activities via map":
+                st.title("Bike Sharing Data")
+                hour_selected = st.slider("Select hour of rent", 0, 23)
+                act = get_activities()
+                act_frame=pd.DataFrame(act, columns=["time", "lat","lon"])
+                act_frame.to_csv("actLog.csv",index=False,header=True)
+                af = pd.read_csv("actLog.csv")
+                af["time"] = pd.to_datetime(af["time"])
+                af = af[af["time"].dt.hour == hour_selected]
                 
-                fig = px.bar(df, x="start", y="cost",title= "Revenue per start location")
-                #fig.update_layout(showlegend=True)        
-                #fig.update_layout(legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=1.2))
-                st.plotly_chart(fig, use_container_width=True) 
-            if task=="Controller":
-                user_result=view_all_users(username, pwd)
-                clean_db=pd.DataFrame(user_result,columns=["User name","Password","name","age","Type"])
-                clean_db=clean_db[["User name","name","age","Type"]]
-                st.dataframe(clean_db)    
+                show_map(af,55.86,-4.27,zoom=12)
+                st.write(af)
+                
+                
+
         elif ((result[1]!="User")|(result[1]!="controller")|(result[1]!="Manager")):
             st.warning("Incorrect User ID/Password")
     

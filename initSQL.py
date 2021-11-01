@@ -203,3 +203,10 @@ Select a bike from given location
 select_one_bike = """ SELECT bikeid FROM bike
                 WHERE locid = ?
                 LIMIT 1 """
+
+###############################################
+list_activities = """ select a.StartDateTime, l.latitude, l.longitude 
+                     from ActivityLog a, LOCATION l
+                        where
+                        a.startLoc = l.locid
+                        """

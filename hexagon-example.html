@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>pydeck</title>
+        <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
+    <script src='https://cdn.jsdelivr.net/npm/@deck.gl/jupyter-widget@~8.5.*/dist/index.js'></script>
+    <style>
+    body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#deck-map-container {
+  width: 100%;
+  height: 100%;
+  background-color: black;
+}
+
+#map {
+  pointer-events: none;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  z-index: 1;
+}
+
+#deckgl-overlay {
+  z-index: 2;
+  background: none;
+}
+
+#deck-map-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+#deck-container {
+  width: 100vw;
+  height: 100vh;
+}
+    </style>
+  </head>
+  <body>
+    <div id="deck-container">
+    </div>
+  </body>
+  <script>
+    const jsonInput = {"initialViewState": {"bearing": -27.36, "latitude": 52.2323, "longitude": -1.415, "maxZoom": 15, "minZoom": 5, "pitch": 40.5, "zoom": 6}, "layers": [{"@@type": "HexagonLayer", "autoHighlight": true, "coverage": 1, "data": [{"lat": 55.86077, "lon": -4.264535, "time": "2021-10-03T22:23:00"}, {"lat": 55.86077, "lon": -4.264535, "time": "2021-10-03T22:27:53"}, {"lat": 55.86077, "lon": -4.264535, "time": "2021-10-03T22:41:01"}, {"lat": 55.858167, "lon": -4.245483, "time": "2021-10-17T22:36:22"}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}, {"lat": NaN, "lon": NaN, "time": NaN}], "elevationRange": [0, 50], "elevationScale": 50, "extruded": true, "getPosition": "@@=[lon, lat]", "id": "14af26b0-94b6-4534-abc2-a47ed6653e96", "pickable": true, "radius": 10}], "mapProvider": "carto", "mapStyle": "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json", "views": [{"@@type": "MapView", "controller": true}]};
+    const tooltip = true;
+    const customLibraries = null;
+
+    const deckInstance = createDeck({
+                  container: document.getElementById('deck-container'),
+      jsonInput,
+      tooltip,
+      customLibraries
+    });
+
+  </script>
+</html>
