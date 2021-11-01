@@ -266,6 +266,11 @@ def view_all_users(user_id,pwd):
     return dat
 
 def get_locations():
+    cursor.execute(qry.list_locations_with_bikes)
+    loc=cursor.fetchall()
+    return loc
+
+def get_all_locations():
     cursor.execute(qry.list_locations)
     loc=cursor.fetchall()
     return loc
@@ -407,10 +412,18 @@ if select_page == 'Sign in':
                     [loc_frame["Lat"][i],loc_frame["Lng"][i]],
                     popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
                     ).add_to(m)
-            # click for lat and lng
-            m.add_child(folium.LatLngPopup())
-            # print(str(folium.LatLngPopup().to_dict()))
-            # print(str(folium.LatLngPopup().location))
+
+            # add locations with 0 bike
+            locs = get_all_locations()
+            locs_f = pd.DataFrame(locs,
+                columns=["LocID", "Location","Lat","Lng"])
+            for i in range(len(locs_f)):
+                if locs_f["LocID"][i] not in loc_frame["LocID"].to_list():
+                    folium.Marker(
+                    [locs_f["Lat"][i],locs_f["Lng"][i]],
+                    popup=str(locs_f['Location'][i])+" Bikes: 0"
+                    ).add_to(m)
+
             folium_static(m)
 
 
@@ -539,6 +552,18 @@ if select_page == 'Sign in':
                     [loc_frame["Lat"][i],loc_frame["Lng"][i]],
                     popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
                     ).add_to(m)
+
+            # add locations with 0 bike
+            locs = get_all_locations()
+            locs_f = pd.DataFrame(locs,
+                columns=["LocID", "Location","Lat","Lng"])
+            for i in range(len(locs_f)):
+                if locs_f["LocID"][i] not in loc_frame["LocID"].to_list():
+                    folium.Marker(
+                    [locs_f["Lat"][i],locs_f["Lng"][i]],
+                    popup=str(locs_f['Location'][i])+" Bikes: 0"
+                    ).add_to(m)
+
             folium_static(m)
 
             if task=="Controller":
@@ -602,11 +627,11 @@ if select_page == 'Sign in':
                 
                 bno2=st.number_input(label="Enter the number of bike to move", step=1) #check max value later
                 
-                loc_list = get_locations()
-                loc_frame=pd.DataFrame(loc_list, columns=["LocID", "Location","Lat","Lng","Bikecount"])
-                loc_display=loc_frame[loc_frame["LocID"]!=frlocid]["Location"]
+                locs = get_all_locations()
+                locs_f=pd.DataFrame(locs, columns=["LocID", "Location","Lat","Lng"])
+                locs_display=locs_f[locs_f["LocID"]!=frlocid]["Location"]
 
-                loc4 = st.selectbox('Choose the destination location',loc_display)
+                loc4 = st.selectbox('Choose the destination location',locs_display)
                 # if loc4 == "Merchant Square":
                 #     dstlocid = 1
                 # elif loc4 == "University of Strathclyde":
@@ -620,7 +645,7 @@ if select_page == 'Sign in':
                 # elif loc4 == "Glasgow Cathedral":
                 #     dstlocid = 6
 
-                dstlocid = int(loc_frame[loc_frame["Location"]==loc4]["LocID"].to_list()[0])
+                dstlocid = int(locs_f[locs_f["Location"]==loc4]["LocID"].to_list()[0])
                 print("Dest locid :", dstlocid)
                 number = int(loc_frame[loc_frame["LocID"]==frlocid]["Bikecount"])
                 #Call repair bike in bulk or using one by one bike id

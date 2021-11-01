@@ -36,14 +36,24 @@ Display user balance
 disp_balance = " SELECT balance FROM user where userid = ? "
 
 """
-List of all locations
+List of all locations have bikes
 """
-list_locations = """ select l.locid, l.location, l.latitude, l.longitude, count(b.bikeid)
+list_locations_with_bikes = """ select l.locid, l.location, l.latitude, l.longitude, count(b.bikeid)
                      from BIKE b, LOCATION l
                         where
                         b.locid = l.locid
                         group by b.locid
  """
+
+""" 
+List all the locations
+"""
+list_locations = """ select locid, location, latitude, longitude 
+                     from LOCATION 
+ """
+
+
+
 
 """
 Insert the activity log of the bike at time of renting
