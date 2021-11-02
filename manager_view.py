@@ -231,8 +231,8 @@ def add_userdata(username,pwd,age,gender,role="User"):
 
 # Let a user topup money into his/her account wallet  
 def topupWallet(amt, userid):
-    cursor.execute(qry.pay_acct, (amt, userid))
-    print ("amt {}".format(amt))
+    cursor.execute(qry.pay_acct, (round(amt,2), userid))
+    print ("amt {}".format(round(amt,2)))
     db.commit()
 
 # Let an operator repair a reported defective bike 
@@ -289,7 +289,6 @@ def get_bike_info():
     return info
 
 # Get all the rent activities
-@st.cache(persist=True)
 def get_activities():
     cursor.execute(qry.list_activities)
     act=cursor.fetchall()
@@ -310,11 +309,11 @@ def show_map(data,lat,lon,zoom):
                 "HexagonLayer",
                 data,
                 get_position=["lon", "lat"],
-                radius=10,
+                radius=20,
                 auto_highlight=True,
                 elevation_scale=50,
                 pickable=True,
-                elevation_range=[5, 30],
+                elevation_range=[10, 30],
                 extruded=True,
                 coverage=1
             ),
@@ -531,7 +530,7 @@ if select_page == 'Sign in':
             
             #User can manually add or TopUp wallet
             if task=="TopUp Wallet":
-                topup_amt=st.number_input(label="Amount", value=0.5,min_value=0.5,max_value=10.0,step=0.5)
+                topup_amt=st.number_input(label="Amount", value=0.1,min_value=0.1,max_value=100.0,step=0.1) #TSA logic changed slightly
                 print("Wallet topup with amount {} for user {}"
                       .format(topup_amt, userid))
                 if (st.button("Add")):
@@ -665,15 +664,20 @@ if select_page == 'Sign in':
                 st.write("Bikes ready to be moved from following locations")
                 all_bikes=track_all_bikes() # list locations available to move bikes from
                 all_bikes_disp=pd.DataFrame(all_bikes, columns=["City", "Location", "Bike Count"])
-                st.dataframe(all_bikes_disp)
+                
                 a=all_bikes_disp[all_bikes_disp["Bike Count"]>0]["Location"].unique()
+                #new code which showz location with 0 bikes below
+                locs11=cursor.execute('''select l.city,l.location, count(b.bikeid) from LOCATION l left join BIKE b on
+                                      b.locid = l.locid group by b.locid''')
+                all_loc_df2=pd.DataFrame(locs11,columns=["City name","Location","Bike count"])
+                st.dataframe(all_loc_df2) #TSA displaying new table
                 loc3 = st.selectbox('Choose the Source location to move bike from',a)
 
                 frlocid = int(loc_frame[loc_frame["Location"]==loc3]["LocID"].to_list()[0])
                 print("From locid :", frlocid)
                 
-                
-                bno2=st.number_input(label="Enter the number of bike to move", step=1) #check max value later
+                max_b=int(all_bikes_disp[all_bikes_disp["Location"]==loc3]["Bike Count"])
+                bno2=st.number_input(label="Enter the number of bike to move", step=1,max_value=max_b) #check max value later
                 
                 locs = get_all_locations() # list all the locations except the one selected above
                 locs_f=pd.DataFrame(locs, columns=["LocID", "Location","Lat","Lng"])
@@ -689,9 +693,14 @@ if select_page == 'Sign in':
                     # check if the number of bikes is appropriate
                     if (bno2 > 0) and (bno2 <= number):
                         move(frlocid, dstlocid, bno2)
-                        st.write("Specified number of bikes are moved to the destination location")
+                        st.info("Specified number of bikes are moved to the destination location")
+                        st.info("Updated table below")
+                        locs11=cursor.execute('''select l.city,l.location, count(b.bikeid) from LOCATION l left join BIKE b on
+                                     b.locid = l.locid group by b.locid''')
+                        all_loc_df2=pd.DataFrame(locs11,columns=["City name","Location","Bike count"])
+                        st.dataframe(all_loc_df2) #TSA displaying table after updation
                     else:
-                        st.write("Please select a valid number")
+                        st.warning("Reduce the number of bikes to move or Please select a valid number")
                 
         elif result[1] == "Manager":
             userid = result[0]
@@ -704,10 +713,18 @@ if select_page == 'Sign in':
                 txn1=cursor.fetchall()
                 df=pd.DataFrame(txn1,columns=["TxnID", "BikeID", "UserID","StartDateTime","EndDateTime","PaidBy",
                                               "startLoc","endLoc","Charges","duration_mins","Name","Gender","Age","Balance"])
-                di={1:"Merchant Square",2:"University of Strathclyde",3:"Patrick Interchange",4:"University of Glasgow",
-                    5:"Waterloo Street",6:"Glasgow Cathedral"}
+                cursor.execute('''select locid, location from LOCATION''')
+                dict1=cursor.fetchall()
+                dictdf=pd.DataFrame(dict1,columns=["locid","location"])
+                #st.dataframe(dictdf)
+                di=pd.Series(dictdf.location.values,index=dictdf.locid).to_dict() #TSA made dynamic location mapping
+                #st.write(di)
+                #di={1:"Merchant Square",2:"University of Strathclyde",3:"Patrick Interchange",4:"University of Glasgow",
+                 #   5:"Waterloo Street",6:"Glasgow Cathedral"}
                 df["start_loc"]=df["startLoc"].map(di)
+                print(df["start_loc"])
                 df["end_loc"]=df["endLoc"].map(di)
+                print(df["end_loc"])
                 df['date']=pd.to_datetime(df['StartDateTime']).dt.date
                 df['age_bucket']=np.where(df['Age']<=19,"Children/Teen",np.where(df['Age']<=29,"Young Adult",np.where(df['Age']<60,"Adult","Senior Citizen")))
                 #df=pd.DataFrame(txn1)
