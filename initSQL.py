@@ -27,8 +27,8 @@ all_user = "SELECT username, role, password_txt, balance, age FROM user"
 """
 Insert an user to table at Sign-up. The initial balance is Zero for the user
 """
-add_user = """INSERT INTO user(username, password_txt, age,role, balance) 
-            VALUES (?,?,?,?,0.0)"""
+add_user = """INSERT INTO user(username, password_txt, age, gender, role, balance) 
+            VALUES (?,?,?,?,?, 0.0)"""
 
 """
 Display user balance
@@ -52,6 +52,14 @@ list_locations = """ select locid, location, latitude, longitude
                      from LOCATION 
  """
 
+"""
+List of all bikes locations
+"""
+list_bikes = """ select b.bikeid, b.rented, b.bikestat, l.location
+                     from BIKE b, LOCATION l
+                        where
+                        b.locid = l.locid
+ """
 
 
 

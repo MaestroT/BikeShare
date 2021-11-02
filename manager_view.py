@@ -2,7 +2,7 @@
 """
 Created on Mon Oct  4 14:14:35 2021
 
-@author: tonys, manis
+@author: tonys, manis, weiran
 
 This file will initialize the following
 1. Connection to Bikeshare Database
@@ -42,21 +42,25 @@ from datetime import datetime
 from datetime import timedelta  
 import folium
 from  streamlit_folium import folium_static
-###
 import pydeck as pdk
-import altair as alt
 
-#c.execute('CREATE TABLE IF NOT EXISTS users(user_id TEXT, pwd TEXT, name TEXT,age integer ,mtype TEXT)')
-
-#conn.commit()
+# show the navigation info
+# provide 3 pages: 
+#       Overview: Introduction of this system
+#       Sign in: Use one's registered account to get access to our system
+#       Sign up: The system only permits sign up as a "User"(Customer)
 st.sidebar.title('Navigation')
 select_page = st.sidebar.selectbox("Menu", ("Overview","Sign in","Sign up") )
 
+# When a user want to rent a bike,
+# this function will check if the user is able to rent a bike
+#     return 0: current location has zero bike
+#     return -1: the user already rent a bike
+#     return >0: the bikeid of the bike the user rent 
 def findBike(locid, userid):
     #Initialize the bike number and proceed to identify
     alloted_bike = 0
     already_rented = 0
-    
     #Check if this user already rented a bike and not returned
     print("Calling check_user_stat with User ID {}".format(userid))
     cursor.execute(qry.check_user_stat, (userid,))
@@ -107,140 +111,139 @@ def findBike(locid, userid):
         db.commit()
         return alloted_bike[0]
 
-# find avaiable bikes
+# find avaiable bikes at a certain location (select all the bikeid with the certain locid)
 def findBikes(locid):
     cursor.execute(qry.find_bikes, (locid,))
     return cursor.fetchall()
 
-
+# When a user want to return a bike,
+# this function will check if the user is able to return a bike
+#     return -1: the user do not have a bike need to return
+#     return rent charges and update the bike status 
 def returnBike(userid, endlocid):
-     #Check if this bike is ready to return
-     biketorls = 0
-     start_tm  = ''
-     already_rented = ['']
-     bikeid = 0
-     
-     #Check if this user already rented a bike
-     print("Calling check_user_stat with User ID {}".format(userid))
-     cursor.execute(qry.check_user_stat, (userid,))
-     for already_rented in cursor.fetchall():
-         print("Already rented Bike for this user is: {}"
-               .format(already_rented))
-    
-     bikeid = already_rented[0]
-     
-     if bikeid == '' or bikeid == 0:
-         print("No option to return bike")
-         return ([-1]) 
-    
-     print("Calling ready_to_release with bike {} userid {} endlocid {}"
-           .format(bikeid, userid, endlocid))
-     cursor.execute(qry.ready_to_release, (bikeid, userid))
-     for biketorls in cursor.fetchall():
-            print("Going to release Bike ID : {} and rented at {}"
-                  .format(biketorls[0], biketorls[1]))
-     if (biketorls == 0):
-         print ("ERROR : No rent activity for this Bike & User. Bike can not be released!")    
-           
-     #Mark bike as released and set the current location
-     if (biketorls != 0):
-         print("Calling bike_released using end location {} and bikeid {}"
-               .format(endlocid, bikeid))
-         cursor.execute(qry.bike_released, (endlocid, bikeid))   
-     
-     #Calculate charges for the duration based on rate per hr
-     if (biketorls != 0):
-         charges     = 0.0
-         rate_per_mn = 0.06  #6 pense per minute
-         PaidBy      = 'Cash'
-         enddtm      = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-         print ("Calculating difference at {}".format(enddtm))
-         start_tm  = biketorls[1]
-         #Time diff in minutes
-         time_diff = round(((datetime.now() - datetime.fromisoformat(start_tm)).total_seconds() / 60), 2)
-         charges   = round((time_diff * rate_per_mn), 2)
+    #Check if this bike is ready to return
+    biketorls = 0
+    start_tm  = ''
+    already_rented = ['']
+    bikeid = 0
+    #Check if this user already rented a bike
+    print("Calling check_user_stat with User ID {}".format(userid))
+    cursor.execute(qry.check_user_stat, (userid,))
+    for already_rented in cursor.fetchall():
+        print("Already rented Bike for this user is: {}"
+              .format(already_rented))
 
-     #Update the activity log for the bike
-     if (biketorls != 0):
-         print("Calling upd_activitylog using bike id {} duration {} and charge {}"
-               .format(bikeid, time_diff, charges))
-         cursor.execute(qry.upd_activitylog, (enddtm,
-                                              PaidBy,
-                                              endlocid,
-                                              charges,
-                                              time_diff,
-                                              bikeid,
-                                              userid))
-         print("Success calling upd_activitylog")
-         db.commit()
+    bikeid = already_rented[0]
     
-     #Update user balance
-     if (biketorls != 0):
-         print("Updating user balance using {}"
-               .format(userid))
-         cursor.execute(qry.update_balance, (charges,
+    if bikeid == '' or bikeid == 0:
+        print("No option to return bike")
+        return ([-1]) 
+
+    print("Calling ready_to_release with bike {} userid {} endlocid {}"
+          .format(bikeid, userid, endlocid))
+    cursor.execute(qry.ready_to_release, (bikeid, userid))
+    for biketorls in cursor.fetchall():
+           print("Going to release Bike ID : {} and rented at {}"
+                 .format(biketorls[0], biketorls[1]))
+    if (biketorls == 0):
+        print ("ERROR : No rent activity for this Bike & User. Bike can not be released!")    
+          
+    #Mark bike as released and set the current location
+    if (biketorls != 0):
+        print("Calling bike_released using end location {} and bikeid {}"
+              .format(endlocid, bikeid))
+        cursor.execute(qry.bike_released, (endlocid, bikeid))   
+    
+    #Calculate charges for the duration based on rate per hr
+    if (biketorls != 0):
+        charges     = 0.0
+        rate_per_mn = 0.06  #6 pense per minute
+        PaidBy      = 'Cash'
+        enddtm      = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print ("Calculating difference at {}".format(enddtm))
+        start_tm  = biketorls[1]
+        #Time diff in minutes
+        time_diff = round(((datetime.now() - datetime.fromisoformat(start_tm)).total_seconds() / 60), 2)
+        charges   = round((time_diff * rate_per_mn), 2)
+    #Update the activity log for the bike
+    if (biketorls != 0):
+        print("Calling upd_activitylog using bike id {} duration {} and charge {}"
+              .format(bikeid, time_diff, charges))
+        cursor.execute(qry.upd_activitylog, (enddtm,
+                                             PaidBy,
+                                             endlocid,
+                                             charges,
+                                             time_diff,
+                                             bikeid,
                                              userid))
-         print("Success calling update_balance")
-         db.commit()
-         return ([0, charges])
+        print("Success calling upd_activitylog")
+        db.commit()
 
+    #Update user balance
+    if (biketorls != 0):
+        print("Updating user balance using {}"
+              .format(userid))
+        cursor.execute(qry.update_balance, (charges,
+                                            userid))
+        print("Success calling update_balance")
+        db.commit()
+        return ([0, charges])
+
+
+# When a user want to report a defective bike,
+# this function will check if the user is already rent a bike
+#     return -1: the user do not have a bike rent currently
+#     return bikeid and update information in the database 
 def reportDefectiveBike(cmnts, userid):
-     #Check if a bike is ready to be reported
-     already_rented = ['']
-     bikeid = 0
-     
-     #Check if this user already rented a bike
-     print("Calling check_user_stat with User ID {}".format(userid))
-     cursor.execute(qry.check_user_stat, (userid,))
-     for already_rented in cursor.fetchall():
-         print("Already rented Bike for this user is: {}"
-               .format(already_rented))
+    #Check if a bike is ready to be reported
+    already_rented = ['']
+    bikeid = 0
     
-     bikeid = already_rented[0]
-     
-     if bikeid == '' or bikeid == 0:
-         print("No option to report defective")
-         #return status
-         return ([-1]) 
-     
-     #Update user comments and report defective
-     if (bikeid > 0):
-         print("Calling report_defective using comments {} for bikeid {}"
-               .format(cmnts, bikeid))
-         cursor.execute(qry.report_defective, (cmnts, bikeid))
-         db.commit()
-     #return status and bikeid
-     return ([0, bikeid])
+    #Check if this user already rented a bike
+    print("Calling check_user_stat with User ID {}".format(userid))
+    cursor.execute(qry.check_user_stat, (userid,))
+    for already_rented in cursor.fetchall():
+        print("Already rented Bike for this user is: {}"
+              .format(already_rented))
 
-def create_usertable():
-    #c.execute('CREATE TABLE IF NOT EXISTS users(user_id TEXT, pwd TEXT, name TEXT,age integer ,mtype TEXT)')
-    #a=0
-    cursor.execute('SELECT COUNT(*) FROM user')
-    a=cursor.fetchone()
-    a=a[0]
-    #st.write(a)
-    #if(a==0):
-        #c.execute('INSERT INTO users(user_id,pwd,name,age,mtype) VALUES (?,?,?,?,?)',("admin","admin","admin",0,"manager"))
-        #c.execute('INSERT INTO users(user_id,pwd,name,age,mtype) VALUES (?,?,?,?,?)',("operator","opera","operator",0,"operator"))
-        #conn.commit()
+    bikeid = already_rented[0]
     
-def add_userdata(username,pwd,name,age,role="User"):
-    cursor.execute(qry.add_user, (username, pwd, age, role))
+    if bikeid == '' or bikeid == 0:
+        print("No option to report defective")
+        #return status
+        return ([-1]) 
+    
+    #Update user comments and report defective
+    if (bikeid > 0):
+        print("Calling report_defective using comments {} for bikeid {}"
+              .format(cmnts, bikeid))
+        cursor.execute(qry.report_defective, (cmnts, bikeid))
+        db.commit()
+    #return status and bikeid
+    return ([0, bikeid])
+
+
+# When a user sign up a new account,
+# this function will add it to the database   
+def add_userdata(username,pwd,age,gender,role="User"):
+    cursor.execute(qry.add_user, (username, pwd, age, gender, role))
     db.commit()
 
+# Let a user topup money into his/her account wallet  
 def topupWallet(amt, userid):
     cursor.execute(qry.pay_acct, (amt, userid))
     print ("amt {}".format(amt))
     db.commit()
 
+# Let an operator repair a reported defective bike 
 def repairBike(bikeid):
     print("Calling repair bike with bikeid {}".format(bikeid))
     cursor.execute(qry.repair_bike, (bikeid,))  
     db.commit()
     print("repair bike done")
 
+# Let an operator move several numbers of bikes from a location to another 
 def move(frmlocid, dstlocid, bikecount):
-    #Operator moves a bike to specific location
     print("Moving {} bike(s) from Location {} to {}"
           .format(bikecount, frmlocid, dstlocid))
     for i in range(bikecount):
@@ -252,6 +255,7 @@ def move(frmlocid, dstlocid, bikecount):
         db.commit()
         print("{} move done".format(i+1))
 
+# User sign in function 
 def login_user(user_id,pwd):
     cursor.execute(qry.user_logon,(user_id, pwd))
     data=['','']
@@ -260,36 +264,44 @@ def login_user(user_id,pwd):
         data = user
     return data
 
+# View all the accounts in the system 
 def view_all_users(user_id,pwd):
     cursor.execute(qry.all_user)
     dat=cursor.fetchall()
     return dat
 
+# Get locations with available bikes
 def get_locations():
     cursor.execute(qry.list_locations_with_bikes)
     loc=cursor.fetchall()
     return loc
 
+# Get all the locations in the system
 def get_all_locations():
     cursor.execute(qry.list_locations)
     loc=cursor.fetchall()
     return loc
 
-###############################################
+# Get all the locations of every bike
+def get_bike_info():
+    cursor.execute(qry.list_bikes)
+    info=cursor.fetchall()
+    return info
+
+# Get all the rent activities
 @st.cache(persist=True)
 def get_activities():
     cursor.execute(qry.list_activities)
     act=cursor.fetchall()
     return act
-# stime, lat, lng
-###############################################
 
+# Show histogram of rent activities in map via pdk
 def show_map(data,lat,lon,zoom):
     st.write(pdk.Deck(
         map_style="mapbox://styles/mapbox/light-v9",
         initial_view_state={
-            "latitude": 55.86,
-            "longitude": -4.27,
+            "latitude": lat,
+            "longitude": lon,
             "zoom": zoom,
             "pitch": 50,
         },
@@ -309,22 +321,24 @@ def show_map(data,lat,lon,zoom):
         ]
     ))
 
-###############################################
+# Get user's balance
 def get_balance(userid):
     balance = ['']
     cursor.execute(qry.disp_balance, (userid,))
     balance = cursor.fetchall()
     return balance[0]
 
+# Get a certain bike's current location
 def get_bikeLocation(bikeid):
     loc = ['']
     cursor.execute(qry.getBikeLoc, (bikeid,))
     loc = cursor.fetchall()
     return loc[0]
 
+# Pay charges to user's account after the rent activity
 def setBalancesToZero(userid, charges):
     balance = get_balance(userid)                    
-    curBal = balance[0]
+    curBal = round(balance[0],2)
     st.selectbox("Charges",[charges,])
     print("Current wallet balance is {} ".format(curBal))
     
@@ -338,18 +352,20 @@ def setBalancesToZero(userid, charges):
             print("Done... Set balances to Zero")
             st.write("Payment made. Thank you.")
 
+# Track location of all bikes (not selct bikeid)
 def track_all_bikes():
     cursor.execute(qry.track_all_loc)
     bikes=cursor.fetchall()
     return bikes
 
+# List all defective bikes
 def track_defective_bikes():
     cursor.execute(qry.track_defective)
     bikes=cursor.fetchall()
     return bikes
 
+# display Overview page
 if select_page == 'Overview':
-   
     side1, side2,side3,side4,side5 = st.columns(5)
     image = Image.open('logo.png')
     new_image=image.resize((220, 150))
@@ -360,74 +376,63 @@ if select_page == 'Overview':
     </div>
     """
     side1.markdown(html_temp,unsafe_allow_html=True)
-    #st.title('Overview')
-    #st.write('-------------------------------------')
     
     st.info('**About** : *Bike booking app*')
     st.header("**Reference Manual:**")
     st.subheader("*Book a bike Tab:*")
     st.info('*Main tab for users to rent a bike*')
+    st.info('*Users need to topup money to the account wallet*')
+    st.info('*The max amount you can topup once is 10 and the min amount is 0.5*')
+    st.info('*We will charge you by 6 pence per minute*')
     st.subheader("*Controller Tab:*")
     st.info('*Controller tab to view faulty bikes and move them around.*')
     st.subheader("*Manager Tab:*")
     st.info('*to view reports for manager to make analytical decisions *')
     
 if select_page == 'Sign in':
-    #side1, side2,side3,side4,side5 = st.columns(5)
-    #html_temp = """
-    #<div style="background-color:white;padding:5px">       
-    #    <h1 style="color:black;white-space:nowrap";text-align: left;>LOGIN PAGE</h1>
-    #</div>
-    #"""
-    #side1.markdown(html_temp,unsafe_allow_html=True)
-    #log1=st.radio("Would you like to sign in or sign up?",('Sign in','Sign up'),key=0)
-    #if (log1=='Sign in'):
-    #st.subheader("Enter User ID")
     username=st.sidebar.text_input("USERNAME")
-    #st.subheader("Enter Password")
     pwd=st.sidebar.text_input("Password",type='password')
     if (st.sidebar.checkbox("Sign in/Sign out")):
-        #if pwd=="1234":
-        #create_usertable()
         result=login_user(username, pwd)
         
+        # check if the sign in operation is valid
+        # show certain page for the user dedening on his/her role
         if result[1]=="User":
             userid = result[0]
             st.success("Logged in as {} ".format(username))
-            
+            # list the task for 'User"
             task=st.selectbox("Task", ["Book","View balance","Return",
                                "TopUp Wallet","Report Defective Bike"])
-            
-            # show map
-            m = folium.Map(
-                    location=[55.86,-4.27],
-                    zoom_start=14
-                )
-            loc_list = get_locations()
-            loc_frame = pd.DataFrame(loc_list,
-                columns=["LocID", "Location","Lat","Lng","Bikecount"])
-            for i in range(len(loc_frame)):
-                print(loc_frame['Location'][i])
-                folium.Marker(
-                    [loc_frame["Lat"][i],loc_frame["Lng"][i]],
-                    popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
-                    ).add_to(m)
-
-            # add locations with 0 bike
-            locs = get_all_locations()
-            locs_f = pd.DataFrame(locs,
-                columns=["LocID", "Location","Lat","Lng"])
-            for i in range(len(locs_f)):
-                if locs_f["LocID"][i] not in loc_frame["LocID"].to_list():
-                    folium.Marker(
-                    [locs_f["Lat"][i],locs_f["Lng"][i]],
-                    popup=str(locs_f['Location'][i])+" Bikes: 0"
-                    ).add_to(m)
-
-            folium_static(m)
-
 
             if task=="Book":
+                # show map
+                m = folium.Map(
+                        location=[55.86,-4.27],
+                        zoom_start=14
+                    )
+                loc_list = get_locations() # first collect data from locations have available bikes
+                loc_frame = pd.DataFrame(loc_list,
+                    columns=["LocID", "Location","Lat","Lng","Bikecount"])
+                for i in range(len(loc_frame)):     # add map Marker
+                    print(loc_frame['Location'][i])
+                    folium.Marker(
+                        [loc_frame["Lat"][i],loc_frame["Lng"][i]],
+                        popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
+                        ).add_to(m)
+    
+                # then add locations with 0 bike
+                locs = get_all_locations()
+                locs_f = pd.DataFrame(locs,
+                    columns=["LocID", "Location","Lat","Lng"])
+                for i in range(len(locs_f)):
+                    if locs_f["LocID"][i] not in loc_frame["LocID"].to_list():
+                        folium.Marker(
+                        [locs_f["Lat"][i],locs_f["Lng"][i]],
+                        popup=str(locs_f['Location'][i])+" Bikes: 0"
+                        ).add_to(m)
+    
+                folium_static(m)  # display map in the page
+
                 #User needs to pay if there is any pending charges and proceed
                 proceedBooking = 0
                 currBal = 0
@@ -445,18 +450,21 @@ if select_page == 'Sign in':
                     proceedBooking += 1
 
                 if (proceedBooking > 0):
+                    # let user select a location to rent a bike
+                    # the location list are the locations with bikes available (stored in loc_frame)
                     loc_display=loc_frame[["Location"]]
                     loc_selected=st.selectbox("Available Locations",loc_display)
                     locid = int(loc_frame[loc_frame["Location"]==loc_selected]["LocID"].to_list()[0])
                     bike_available = len(list(findBikes(locid)))
                     print(bike_available)
-                    st.write("There are "+str(bike_available)+" bike(s) available.")
+                    st.write("There are "+str(bike_available)+" bike(s) available.")  # display the numbers of available bikes
 
                     if (st.button("Book a ride")):
                         
                         locid = int(loc_frame[loc_frame["Location"]==loc_selected]["LocID"].to_list()[0])
                         print("locid :", locid)
-                        
+                        # check if the user is able to rent a bike currently
+                        # if the user can rent a bike, generate a bike id and display it
                         alloted_bike = findBike(locid, userid)
                         if alloted_bike > 0:
                             st.write("Your bike id is  :"+str(alloted_bike))
@@ -466,18 +474,43 @@ if select_page == 'Sign in':
                             st.write("You already have a rented bike. Please return to rent again!")
                     
             if task=="Return":
-                loc_display=loc_frame[["Location"]]
+                # show map
+                m = folium.Map(
+                        location=[55.86,-4.27],
+                        zoom_start=14
+                    )
+                loc_list = get_locations()
+                loc_frame = pd.DataFrame(loc_list,
+                    columns=["LocID", "Location","Lat","Lng","Bikecount"])
+                for i in range(len(loc_frame)):
+                    print(loc_frame['Location'][i])
+                    folium.Marker(
+                        [loc_frame["Lat"][i],loc_frame["Lng"][i]],
+                        popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
+                        ).add_to(m)
+                # add locations with 0 bike
+                locs = get_all_locations()
+                locs_f = pd.DataFrame(locs,
+                    columns=["LocID", "Location","Lat","Lng"])
+                for i in range(len(locs_f)):
+                    if locs_f["LocID"][i] not in loc_frame["LocID"].to_list():
+                        folium.Marker(
+                        [locs_f["Lat"][i],locs_f["Lng"][i]],
+                        popup=str(locs_f['Location'][i])+" Bikes: 0"
+                        ).add_to(m)
+                folium_static(m)
+
+                # let the user select a location to return a bike
+                # the location list must contain all the locations in the database, which stored in locs_f
+                loc_display=locs_f[["Location"]]
                 loc_selected=st.selectbox("Available Locations",loc_display)
                 print("loc_selected", loc_selected)
                         
                 if (st.button("Return a bike")):
-                    locid = int(loc_frame[loc_frame["Location"]==loc_selected]["LocID"].to_list()[0])
-                    
+                    locid = int(locs_f[locs_f["Location"]==loc_selected]["LocID"].to_list()[0]) # get the location id
                     print("locid :", locid)
-                    
-                    
+                    # check the return status, if the operation is permit charges the rent cost from user's wallet.
                     stat = returnBike(userid, locid)
-                    
                     if (stat[0] < 0):
                         st.write("No rent activity found. Unable to return.")
                     else:
@@ -492,13 +525,13 @@ if select_page == 'Sign in':
             if task=="View balance":
                 print("Calling get_balance using userid {}".format(userid))
                 balance = get_balance(userid)
-                balance=balance[0]
+                balance = round(balance[0],2)
                 st.info("Your wallet balance is {} ".format(balance))
                 #st.write(balance)
             
             #User can manually add or TopUp wallet
             if task=="TopUp Wallet":
-                topup_amt=st.text_input(label="Amount", value="0.0")
+                topup_amt=st.number_input(label="Amount", value=0.5,min_value=0.5,max_value=10.0,step=0.5)
                 print("Wallet topup with amount {} for user {}"
                       .format(topup_amt, userid))
                 if (st.button("Add")):
@@ -507,13 +540,10 @@ if select_page == 'Sign in':
                 
             #When user reports a bike as defective, it will autoreturn
             if task=="Report Defective Bike":
-                #desc=st.text_input(label="Enter Defect details", 
-                 #                  value="brief description", max_chars=(100))
-                #desc=st.text_input(label="Enter Defect details", value="brief description", max_chars=(100))
                 desc = st.selectbox('Could you choose the error',('Tyre Puncture', 'Seat not proper', 'Pedal broken','another defect'))
                 if (desc=='another defect'):
                     desc=st.text_input(label="Enter Defect details", max_chars=(100))
-                #st.write(desc)                 
+                                 
                 if (st.button("Report Defective")):
                     rp_st=reportDefectiveBike(desc, userid)                 
                     if (rp_st[0] < 0):
@@ -535,36 +565,8 @@ if select_page == 'Sign in':
         elif result[1]=="Operator":
             userid = result[0]
             st.success("Logged in as {}".format(username))
-            
+            # display tasks for Operator
             task=st.selectbox("Task",["Controller", "Track Locations", "Repair", "Move"])
-            
-            # show map
-            m = folium.Map(
-                    location=[55.86,-4.27],
-                    zoom_start=14
-                )
-            loc_list = get_locations()
-            loc_frame = pd.DataFrame(loc_list,
-                columns=["LocID", "Location","Lat","Lng","Bikecount"])
-            for i in range(len(loc_frame)):
-                print(loc_frame['Location'][i])
-                folium.Marker(
-                    [loc_frame["Lat"][i],loc_frame["Lng"][i]],
-                    popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
-                    ).add_to(m)
-
-            # add locations with 0 bike
-            locs = get_all_locations()
-            locs_f = pd.DataFrame(locs,
-                columns=["LocID", "Location","Lat","Lng"])
-            for i in range(len(locs_f)):
-                if locs_f["LocID"][i] not in loc_frame["LocID"].to_list():
-                    folium.Marker(
-                    [locs_f["Lat"][i],locs_f["Lng"][i]],
-                    popup=str(locs_f['Location'][i])+" Bikes: 0"
-                    ).add_to(m)
-
-            folium_static(m)
 
             if task=="Controller":
                 user_result=view_all_users(username, pwd)
@@ -573,10 +575,45 @@ if select_page == 'Sign in':
                 st.dataframe(clean_db)  
             
             if task=="Track Locations":
+                # show map
+                m = folium.Map(
+                        location=[55.86,-4.27],
+                        zoom_start=14
+                    )
+                loc_list = get_locations()
+                loc_frame = pd.DataFrame(loc_list,
+                    columns=["LocID", "Location","Lat","Lng","Bikecount"])
+                for i in range(len(loc_frame)):
+                    print(loc_frame['Location'][i])
+                    folium.Marker(
+                        [loc_frame["Lat"][i],loc_frame["Lng"][i]],
+                        popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
+                        ).add_to(m)
+    
+                # add locations with 0 bike
+                locs = get_all_locations()
+                locs_f = pd.DataFrame(locs,
+                    columns=["LocID", "Location","Lat","Lng"])
+                for i in range(len(locs_f)):
+                    if locs_f["LocID"][i] not in loc_frame["LocID"].to_list():
+                        folium.Marker(
+                        [locs_f["Lat"][i],locs_f["Lng"][i]],
+                        popup=str(locs_f['Location'][i])+" Bikes: 0"
+                        ).add_to(m)
+    
+                folium_static(m)
+
                 st.write("Bikes present in following locations")
                 all_bikes=track_all_bikes()
                 all_bikes_disp=pd.DataFrame(all_bikes, columns=["City", "Location", "Bike Count"])
                 st.dataframe(all_bikes_disp)
+                
+                st.write("Status of each Bike")
+                trackl = get_bike_info()
+                trackdf=pd.DataFrame(trackl,columns=["Bike ID","Rent Status","Bike Status","Location"])
+                trackdf["Rent Status"]=np.where(trackdf["Rent Status"]=="N","Not Rented","Rented")
+                trackdf["Bike Status"]=np.where(trackdf["Bike Status"]=="N","Not Functional","Functional")
+                st.dataframe(trackdf)
                 
             if task=="Repair":
                 st.write("Bikes to repair in following locations")
@@ -587,10 +624,8 @@ if select_page == 'Sign in':
                 dfct_bike_loc=all_dfct_disp["Location"].unique()
                 loc2 = st.selectbox('Choose the location',(dfct_bike_loc))
                 lstdef=all_dfct_disp[all_dfct_disp["Location"]==loc2]["Bike ID"].unique()
-                #st.write(list(lstdef))
                 #Call Repair for the bike(s) selected by operator
                 bid2=st.selectbox('Choose the Bike id',(lstdef))
-                #bkid=st.text_input(label="Enter the bike id", max_chars=(10))
                 #call function to fix bike passing location and bike id
                 bid2=int(bid2)
                 if (st.button("Repair the bike")):
@@ -599,63 +634,62 @@ if select_page == 'Sign in':
                 
                 
             if task=="Move":
+                # show map
+                m = folium.Map(
+                        location=[55.86,-4.27],
+                        zoom_start=14
+                    )
+                loc_list = get_locations()
+                loc_frame = pd.DataFrame(loc_list,
+                    columns=["LocID", "Location","Lat","Lng","Bikecount"])
+                for i in range(len(loc_frame)):
+                    print(loc_frame['Location'][i])
+                    folium.Marker(
+                        [loc_frame["Lat"][i],loc_frame["Lng"][i]],
+                        popup=str(loc_frame['Location'][i])+" Bikes: "+str(loc_frame['Bikecount'][i])
+                        ).add_to(m)
+    
+                # add locations with 0 bike
+                locs = get_all_locations()
+                locs_f = pd.DataFrame(locs,
+                    columns=["LocID", "Location","Lat","Lng"])
+                for i in range(len(locs_f)):
+                    if locs_f["LocID"][i] not in loc_frame["LocID"].to_list():
+                        folium.Marker(
+                        [locs_f["Lat"][i],locs_f["Lng"][i]],
+                        popup=str(locs_f['Location'][i])+" Bikes: 0"
+                        ).add_to(m)
+    
+                folium_static(m)
+
                 st.write("Bikes ready to be moved from following locations")
-                all_bikes=track_all_bikes()
+                all_bikes=track_all_bikes() # list locations available to move bikes from
                 all_bikes_disp=pd.DataFrame(all_bikes, columns=["City", "Location", "Bike Count"])
                 st.dataframe(all_bikes_disp)
-                #loc3 = st.selectbox('Choose the Source location to move bike from',('Merchant Square', 'University of Strathclyde', 'University of Glasgow'
-                #                                           ,'Partick Interchange','Glasgow Cathedral','Waterloo Street'))
                 a=all_bikes_disp[all_bikes_disp["Bike Count"]>0]["Location"].unique()
                 loc3 = st.selectbox('Choose the Source location to move bike from',a)
-                # if loc3 == "Merchant Square":
-                #     frlocid = 1
-                # elif loc3 == "University of Strathclyde":
-                #     frlocid = 2
-                # elif loc3 == "Partick Interchange":
-                #     frlocid = 3
-                # elif loc3 == "University of Glasgow":
-                #     frlocid = 4
-                # elif loc3 == "Waterloo Street":
-                #     frlocid = 5
-                # elif loc3 == "Glasgow Cathedral":
-                #     frlocid = 6
 
                 frlocid = int(loc_frame[loc_frame["Location"]==loc3]["LocID"].to_list()[0])
                 print("From locid :", frlocid)
-                #st.write(all_bikes_disp[all_bikes_disp["Location"]==loc3]["Bike Count"].unique())
-                #maxbk=all_bikes_disp[all_bikes_disp["Location"]==loc3]["Bike Count"]
+                
                 
                 bno2=st.number_input(label="Enter the number of bike to move", step=1) #check max value later
                 
-                locs = get_all_locations()
+                locs = get_all_locations() # list all the locations except the one selected above
                 locs_f=pd.DataFrame(locs, columns=["LocID", "Location","Lat","Lng"])
                 locs_display=locs_f[locs_f["LocID"]!=frlocid]["Location"]
 
                 loc4 = st.selectbox('Choose the destination location',locs_display)
-                # if loc4 == "Merchant Square":
-                #     dstlocid = 1
-                # elif loc4 == "University of Strathclyde":
-                #     dstlocid = 2
-                # elif loc4 == "Partick Interchange":
-                #     dstlocid = 3
-                # elif loc4 == "University of Glasgow":
-                #     dstlocid = 4
-                # elif loc4 == "Waterloo Street":
-                #     dstlocid = 5
-                # elif loc4 == "Glasgow Cathedral":
-                #     dstlocid = 6
 
                 dstlocid = int(locs_f[locs_f["Location"]==loc4]["LocID"].to_list()[0])
                 print("Dest locid :", dstlocid)
                 number = int(loc_frame[loc_frame["LocID"]==frlocid]["Bikecount"])
                 #Call repair bike in bulk or using one by one bike id
                 if (st.button("Move the bike")):
+                    # check if the number of bikes is appropriate
                     if (bno2 > 0) and (bno2 <= number):
-                        # if (frlocid != dstlocid):
                         move(frlocid, dstlocid, bno2)
                         st.write("Specified number of bikes are moved to the destination location")
-                        # else:
-                            # st.write("Same source and destinations selected")
                     else:
                         st.write("Please select a valid number")
                 
@@ -748,18 +782,27 @@ if select_page == 'Sign in':
     
 if select_page == 'Sign up':
     st.subheader("Create a new account")
+    checkuser=0
     user_id=st.text_input("USERNAME")
+    cursor.execute('''select username from USER''') 
+    useridl=cursor.fetchall()
+    #st.write(len(userid))
+    for i in useridl:
+        if user_id == i[0]:
+            st.warning("Username already exists")
+            checkuser=1
     st.subheader("Enter Password")
     pwd=st.text_input("Password",type='password')
-    #st.subheader("Confirm Password")
-    #pwd2=st.text_input("Confirm Password")
-    st.subheader("Enter name")
-    name=st.text_input("name")
     st.subheader("Enter age")
-    age=st.text_input("age")
+    age = st.number_input("Enter age:",
+                min_value=0,max_value=99,step=1)
+    st.subheader("Enter Gender")
+    gender=loc_selected=st.selectbox("Gender",['M','F','Other'])
     if (st.button("Sign up")):
-        #create_usertable()
-        add_userdata(user_id,pwd,name,age)
-        st.success("Account created successfully")
-        st.info("You can now log in to access website")
+        if checkuser == 1:
+            st.warning("Username already exists")
+        else:
+            add_userdata(user_id,pwd,age,gender,"User")
+            st.success("Account created successfully")
+            st.info("You can now log in to access website")
         
