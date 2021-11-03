@@ -15,12 +15,8 @@ This file will initialize the following
 #cd C:/Users/tonys/Desktop/proj1
 
 
-import os 
 import numpy as np
 import pandas as pd 
-import matplotlib.pyplot as plt 
-import seaborn as sns
-import pickle
 import matplotlib.pyplot as plt
 from datetime import datetime as dt
 import streamlit as st 
@@ -30,8 +26,6 @@ import plotly.figure_factory as ff
 import plotly.graph_objs as go
 import plotly.io as pio 
 from plotly.subplots import make_subplots
-#import plotly.plotly as py
-import plotly
 from PIL import Image
 
 import initSQL as qry
@@ -565,13 +559,7 @@ if select_page == 'Sign in':
             userid = result[0]
             st.success("Logged in as {}".format(username))
             # display tasks for Operator
-            task=st.selectbox("Task",["Controller", "Track Locations", "Repair", "Move"])
-
-            if task=="Controller":
-                user_result=view_all_users(username, pwd)
-                clean_db=pd.DataFrame(user_result,columns=["User name", "Role", "Password", "Balance", "Age"])
-                clean_db=clean_db[["User name","Role","Age","Balance"]]
-                st.dataframe(clean_db)  
+            task=st.selectbox("Task",["Track Locations", "Repair", "Move"]) 
             
             if task=="Track Locations":
                 # show map
@@ -767,18 +755,7 @@ if select_page == 'Sign in':
                      "txns": "Transactions",
                  })
                 st.plotly_chart(fig5, use_container_width=True)
-                #df.to_excel("df.xlsx")
-                #st.dataframe(dftxn)
                 
-                #fig1 = px.line(df, x="StartDateTime", y="TxnID",title= "Transactions per day")
-                #st.plotly_chart(fig1, use_container_width=True)
-            
-            # if task=="Controller":
-            #     user_result=view_all_users(username, pwd)
-            #     clean_db=pd.DataFrame(user_result,columns=["User name","Role","Password","Balance","Age"])
-            #     clean_db=clean_db[["User name","Password","Balance","Age"]]
-            #     st.dataframe(clean_db)    
-            ################################
             if task=="View activities via map":
                 st.title("Bike Sharing Data")
                 hour_selected = st.slider("Select hour of rent", 0, 23)
