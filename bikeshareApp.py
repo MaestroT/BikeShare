@@ -339,7 +339,7 @@ def setBalancesToZero(userid, charges):
         print("User's wallet was auto deducted while returning")
         st.write("Payment made from your wallet")
     else:
-        st.info("Your wallet balance is not sufficient. Please topup your wallet first.") #1
+        st.info("Your wallet balance is not sufficient. Please topup your wallet before next ride.") #1
         # if (st.button("Proceed to payment")): #2
         #     topupWallet(curBal*(-1), userid)
         #     print("Done... Set balances to Zero")
@@ -730,12 +730,12 @@ if select_page == 'Sign in':
                 dfloc2=df.groupby(['end_loc']).agg(txns=('TxnID','count'),revenue=('Charges','sum'),rent_time=('duration_mins','sum')).reset_index()
                 dfgen=df.groupby(['Gender']).agg(txns=('TxnID','count'),revenue=('Charges','sum'),rent_time=('duration_mins','sum')).reset_index()
                 dfage=df.groupby(['age_bucket']).agg(txns=('TxnID','count'),revenue=('Charges','sum'),rent_time=('duration_mins','sum')).reset_index()
-                fig1 = px.line(dfagg, x="date", y="txns",title= "Transactions per day",labels={
+                fig1 = px.line(dfagg, x="date", y="txns",title= "Transactions per day", markers=True, labels={
                      "date": "Rented Date",
                      "txns": "Number of transactions",
                  }) #bar or line needs to be decided
                 st.plotly_chart(fig1, use_container_width=True)
-                fig2 = px.line(dfagg, x="date", y="revenue",title= "Revenue per day (in Pounds)",labels={
+                fig2 = px.line(dfagg, x="date", y="revenue",title= "Revenue per day (in Pounds)", markers=True, labels={
                      "date": "Rented Date",
                      "revenue": "Revenue Generated",
                  }) #bar or line needs to be decided

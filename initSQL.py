@@ -41,7 +41,9 @@ List of all locations have bikes
 list_locations_with_bikes = """ select l.locid, l.location, l.latitude, l.longitude, count(b.bikeid)
                      from BIKE b, LOCATION l
                         where
-                        b.locid = l.locid
+                        b.locid = l.locid and
+                        b.rented = 'N' and 
+                        b.bikestat = 'Y'
                         group by b.locid
  """
 
