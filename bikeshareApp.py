@@ -339,11 +339,11 @@ def setBalancesToZero(userid, charges):
         print("User's wallet was auto deducted while returning")
         st.write("Payment made from your wallet")
     else:
-        st.write("Your wallet balance is not sufficient. Do you want to make the payment") #1
-        if (st.button("Proceed to payment")): #2
-            topupWallet(curBal*(-1), userid)
-            print("Done... Set balances to Zero")
-            st.write("Payment made. Thank you.")
+        st.info("Your wallet balance is not sufficient. Please topup your wallet first.") #1
+        # if (st.button("Proceed to payment")): #2
+        #     topupWallet(curBal*(-1), userid)
+        #     print("Done... Set balances to Zero")
+        #     st.write("Payment made. Thank you.")
 
 # Track location of all bikes (not selct bikeid)
 def track_all_bikes():
@@ -375,7 +375,7 @@ if select_page == 'Overview':
     st.subheader("*Book a bike Tab:*")
     st.info('*Main tab for users to rent a bike*')
     st.info('*Users need to topup money to the account wallet*')
-    st.info('*The max amount you can topup once is 10 and the min amount is 0.5*')
+    st.info('*The max amount you can topup once is 100 and the min amount is 0.01*')
     st.info('*We will charge you by 6 pence per minute*')
     st.subheader("*Controller Tab:*")
     st.info('*Controller tab to view faulty bikes and move them around.*')
@@ -524,7 +524,7 @@ if select_page == 'Sign in':
             
             #User can manually add or TopUp wallet
             if task=="TopUp Wallet":
-                topup_amt=st.number_input(label="Amount", value=0.1,min_value=0.1,max_value=100.0,step=0.1) #TSA logic changed slightly
+                topup_amt=st.number_input(label="Amount", value=0.1,min_value=0.01,max_value=100.0,step=0.01) #TSA logic changed slightly
                 print("Wallet topup with amount {} for user {}"
                       .format(topup_amt, userid))
                 if (st.button("Add")):
