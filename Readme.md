@@ -10,15 +10,9 @@ then, `streamlit run bikeshareApp.py`
 
 ## Files
 
- `bikeshareApp.py` main app
+`bikeshareApp.py` main app
 
- `initSQL.py` database operation
-
- `userOperation.py` functions for user 
-
- `operatorOperation.py` functions for operator 
-
-functions for manager are contained in  `bikeshareApp.py`
+`initSQL.py` database operation
 
 `bikeshare.db` (sqlite3) database:
 
@@ -27,5 +21,3 @@ All the account currently in our database: our system only allowed a new account
 ![1635942596098.png](image/Readme/1635942596098.png)
 
 `actlog.csv` a file generated automatically when a "Manager" view the "visualizations via map" page which contains all the rent activities.
-
-`FunctionalSpecifications.docx`  functions need to be implement
